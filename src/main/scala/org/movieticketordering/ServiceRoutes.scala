@@ -4,10 +4,11 @@ import org.http4s.HttpRoutes
 import org.http4s.dsl.Http4sDsl
 import zio.Task
 import zio.interop.catz._
+import org.http4s.circe.CirceEntityCodec.circeEntityEncoder
 
 class ServiceRoutes extends Http4sDsl[Task] {
-  val helloRoute: HttpRoutes[Task] = HttpRoutes.of[Task] {
-    case GET -> Root / "movies" => Ok(hardCodedMovies.toString)
+  val movieRoute: HttpRoutes[Task] = HttpRoutes.of[Task] {
+    case GET -> Root / "movies" => Ok(hardCodedMovies)
   }
 
   val hardCodedMovies = List(
@@ -15,4 +16,3 @@ class ServiceRoutes extends Http4sDsl[Task] {
     Movie("Little Women"),
   )
 }
-
