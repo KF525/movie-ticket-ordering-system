@@ -16,6 +16,6 @@ object MyApp extends ZIOAppDefault {
   val myAppLogic =
     for {
       _ <- printLine("Starting application")
-      _ <- HttpServer.buildServer(new ServiceRoutes().movieRoute)
+      _ <- HttpServer.buildServer(new ServiceRoutes(new MovieController()).movieRoute)
     } yield ()
 }

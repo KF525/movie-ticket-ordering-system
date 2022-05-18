@@ -6,11 +6,11 @@ import zio.Task
 import zio.interop.catz._
 import org.http4s.circe.CirceEntityCodec.circeEntityEncoder
 
-class ServiceRoutes extends Http4sDsl[Task] {
+class ServiceRoutes(movieController: MovieController) extends Http4sDsl[Task] {
   val movieRoute: HttpRoutes[Task] = HttpRoutes.of[Task] {
     case GET -> Root / "movies" => Ok(hardCodedMovies)
     case GET -> Root / "movies" / id / "showings" => for {
-      showings <- getShowings(id)
+      showings <- movieController.getShowings(id)
       response <- Ok(showings)
     } yield response
   }
