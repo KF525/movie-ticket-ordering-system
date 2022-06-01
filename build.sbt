@@ -4,11 +4,24 @@ val circeVersion = "0.14.1"
 
 lazy val root = project
   .in(file("."))
+  .aggregate(movies.js, movies.jvm)
+  .settings(
+    publish := {},
+    publishLocal := {},
+  )
+
+lazy val movies = crossProject(JSPlatform, JVMPlatform)
+  .crossType(CrossType.Full)
+  .in(file("."))
   .settings(
     name := "movie-ticket-ordering-system",
     version := "0.1.0-SNAPSHOT",
-
     scalaVersion := scala3Version,
+    scalacOptions ++= Seq(
+      "-Xfatal-warnings"
+    ),
+  )
+  .jvmSettings(
     libraryDependencies ++= Seq(
       "dev.zio"                       %% "zio"                     % "2.0.0-RC5",
       "dev.zio"                       %% "zio-interop-cats"        % "3.3.0-RC5",
@@ -22,4 +35,13 @@ lazy val root = project
       "io.circe"                      %% "circe-parser"            % circeVersion,
       "org.scalameta"                 %% "munit"                   % "0.7.29" % Test
     )
+  )
+  .jsSettings(
+    scalaJSUseMainModuleInitializer := true,
+    libraryDependencies ++= Seq(
+      ("org.scala-js" %%% "scalajs-dom" % "2.0.0").cross(CrossVersion.for2_13Use3)
+//      ("com.raquo" %%% "laminar"   % "0.14.1").cross(CrossVersion.for2_13Use3),
+//      ("com.raquo" %%% "airstream" % "0.14.0").cross(CrossVersion.for2_13Use3)
+    ),
+    Test / scalaJSLinkerConfig ~= { _.withModuleKind(ModuleKind.CommonJSModule) }
   )
