@@ -20,19 +20,22 @@ lazy val movies = crossProject(JSPlatform, JVMPlatform)
     scalacOptions ++= Seq(
       "-Xfatal-warnings"
     ),
+    libraryDependencies ++= Seq(
+      "dev.zio"                       %%% "zio"                     % "2.0.0",
+      ("io.github.cquiroz"             %%% "scala-java-time"         % "2.0.0").cross(CrossVersion.for3Use2_13),
+      "io.circe"                      %%% "circe-generic"           % circeVersion,
+      "io.circe"                      %%% "circe-parser"            % circeVersion
+    )
   )
   .jvmSettings(
     libraryDependencies ++= Seq(
-      "dev.zio"                       %% "zio"                     % "2.0.0-RC5",
-      "dev.zio"                       %% "zio-interop-cats"        % "3.3.0-RC5",
+      "dev.zio"                       %% "zio-interop-cats"        % "3.3.0",
       "org.typelevel"                 %% "cats-effect"             % "3.3.11",
       "org.http4s"                    %% "http4s-dsl"              % Http4SVersion,
       "org.http4s"                    %% "http4s-core"             % Http4SVersion,
       "org.http4s"                    %% "http4s-circe"            % Http4SVersion,
       "org.http4s"                    %% "http4s-blaze-server"     % Http4SVersion,
       "org.http4s"                    %% "http4s-blaze-client"     % Http4SVersion,
-      "io.circe"                      %% "circe-generic"           % circeVersion,
-      "io.circe"                      %% "circe-parser"            % circeVersion,
       "org.scalameta"                 %% "munit"                   % "0.7.29" % Test
     )
   )
@@ -40,8 +43,6 @@ lazy val movies = crossProject(JSPlatform, JVMPlatform)
     scalaJSUseMainModuleInitializer := true,
     libraryDependencies ++= Seq(
       ("org.scala-js" %%% "scalajs-dom" % "2.0.0").cross(CrossVersion.for2_13Use3)
-//      ("com.raquo" %%% "laminar"   % "0.14.1").cross(CrossVersion.for2_13Use3),
-//      ("com.raquo" %%% "airstream" % "0.14.0").cross(CrossVersion.for2_13Use3)
     ),
     Test / scalaJSLinkerConfig ~= { _.withModuleKind(ModuleKind.CommonJSModule) }
   )
