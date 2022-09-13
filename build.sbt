@@ -22,7 +22,8 @@ lazy val movies = crossProject(JSPlatform, JVMPlatform)
     ),
     libraryDependencies ++= Seq(
       "dev.zio"                       %%% "zio"                     % "2.0.0",
-      ("io.github.cquiroz"             %%% "scala-java-time"         % "2.0.0").cross(CrossVersion.for3Use2_13),
+      "dev.zio"                       %%% "zio-streams"             % "2.0.0",
+      ("io.github.cquiroz"            %%% "scala-java-time"         % "2.0.0").cross(CrossVersion.for3Use2_13),
       "io.circe"                      %%% "circe-generic"           % circeVersion,
       "io.circe"                      %%% "circe-parser"            % circeVersion
     )
