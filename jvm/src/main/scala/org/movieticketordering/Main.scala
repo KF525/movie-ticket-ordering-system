@@ -9,6 +9,7 @@ import zio.*
 import zio.Console.*
 import zio.interop.catz.*
 import zio.managed.Managed
+import cats.implicits._
 
 object MyApp extends ZIOAppDefault {
   def run = myAppLogic
@@ -16,6 +17,8 @@ object MyApp extends ZIOAppDefault {
   val myAppLogic =
     for {
       _ <- printLine("Starting application")
-      _ <- HttpServer.buildServer(new ServiceRoutes(new MovieController()).movieRoute)
+      serviceRoutes = new ServiceRoutes(new MovieController())
+      fileRoutes = new StaticFileRoutes()
+      _ <- HttpServer.buildServer(serviceRoutes.movieRoute <+> fileRoutes.fileRoutes)
     } yield ()
 }
