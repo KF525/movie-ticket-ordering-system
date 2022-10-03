@@ -1,10 +1,10 @@
 package org.movieticketordering
 
 import org.scalajs.dom
-import org.scalajs.dom.document
+import org.scalajs.dom.{Event, document}
 import zio.*
 import zio.Console.*
-import zio.stream.ZStream
+import zio.stream._
 
 object Main extends ZIOAppDefault {
   override def run: Task[Unit] = myAppLogic
@@ -18,12 +18,15 @@ object Main extends ZIOAppDefault {
     registerCallback(response => cb(ZIO.succeed(Chunk(response))))
   )
 
-  val printResponse = callbackStream.foreach(r => printLine(s"GOT RESPONSE: $r"))
+  val printResponse: ZIO[Any, Throwable, Unit] = callbackStream.foreach(r =>  ZIO.attempt(appendPar(document.body, r)))
 
   val myAppLogic =
     for {
       _ <- printLine( "Starting application")
       _ <- ZIO.attempt(appendPar(document.body, "Hello World"))
+      stream <- ZIO.attempt(appendButton(document.body, "Click Me"))
+      buttonSink = ZSink.foreach(_ => ZIO.attempt(appendPar(document.body, "clicked!!")))
+      _ <- stream.run(buttonSink)
       _ <- printThem
       _ <- printResponse
 //      movieData <- ZIO.attempt(getMovieData())
@@ -35,6 +38,22 @@ def appendPar(targetNode: dom.Node, text: String): Unit = {
   val parNode = document.createElement("p")
   parNode.textContent = text
   targetNode.appendChild(parNode)
+}
+
+def appendButton(targetNode: dom.Node, text: String): ZStream[Any, Throwable, Unit] = {
+  val buttonNode = document.createElement("button")
+  buttonNode.textContent = text
+  targetNode.appendChild(buttonNode)
+
+  def registerButtonCallback(handler: Unit => Unit) = {
+    targetNode.addEventListener("onclick", _ => handler(()))
+  }
+
+  val buttonCallbackStream = ZStream.async[Any, Throwable, Unit](cb =>
+    registerButtonCallback(event => cb(ZIO.succeed(Chunk(()))))
+  )
+
+  buttonCallbackStream
 }
 
 def getMovieData(): String = {
