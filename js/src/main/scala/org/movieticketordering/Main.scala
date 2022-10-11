@@ -9,7 +9,9 @@ import zio.stream._
 object Main extends ZIOAppDefault {
   override def run: Task[Unit] = myAppLogic
 
-  val zStreamRange: ZStream[Any, Nothing, Int] = ZStream.range(1, 5)
+  val zStreamRange: ZStream[Any, Nothing, Int] = ZStream.range(1, 5).mapZIO(i => ZIO.sleep(1.second).map(_ => i))
+
+  val zStreamChannel = zStreamRange.toChannel.mapOut(i => i.toString)
 
   val printThem = zStreamRange.foreach(i => printLine(s"got item from stream: $i"))
   // todo: foreach again on same stream (exhausted??)
@@ -20,19 +22,38 @@ object Main extends ZIOAppDefault {
 
   val printResponse: ZIO[Any, Throwable, Unit] = callbackStream.foreach(r =>  ZIO.attempt(appendPar(document.body, r)))
 
+  val label = createTextLabel(document.body)
+
+  val combined = zStreamChannel >>> label
+
   val myAppLogic =
     for {
       _ <- printLine( "Starting application")
       _ <- ZIO.attempt(appendPar(document.body, "Hello World"))
-      stream <- ZIO.attempt(appendButton(document.body, "Click Me"))
-      buttonSink = ZSink.foreach(_ => ZIO.attempt(appendPar(document.body, "clicked!!")))
-      _ <- stream.run(buttonSink)
-      _ <- printThem
-      _ <- printResponse
+//      stream <- ZIO.attempt(appendButton(document.body, "Click Me"))
+//      buttonSink = ZSink.foreach(_ => ZIO.attempt(appendPar(document.body, "clicked!!")))
+//      _ <- stream.run(buttonSink)
+      _ <- combined.run
+//      _ <- printResponse
 //      movieData <- ZIO.attempt(getMovieData())
 //      _ <- ZIO.attempt(appendPar(document.body, movieData))
     } yield ()
 }
+
+//def textLabelSink(targetNode: dom.Node): ZSink[]
+
+def createTextLabel(targetNode: dom.Node): ZChannel[Any, Any, String, Any, Nothing, Nothing, Unit] = {
+  val parNode = document.createElement("p")
+  val textLabelChannel =
+    ZChannel.readWith(
+      (someText: String) => ZChannel.fromZIO(ZIO.attempt(parNode.textContent = someText).ignore),
+      (_: Any) => ZChannel.unit,
+      (_: Any) => ZChannel.unit
+    )
+  targetNode.appendChild(parNode)
+  textLabelChannel
+}
+
 
 def appendPar(targetNode: dom.Node, text: String): Unit = {
   val parNode = document.createElement("p")
