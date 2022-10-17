@@ -11,10 +11,7 @@ object Main extends ZIOAppDefault {
 
   val zStreamRange: ZStream[Any, Nothing, Int] = ZStream.range(1, 5).mapZIO(i => ZIO.sleep(1.second).map(_ => i))
 
-  val zStreamChannel = zStreamRange.toChannel.mapOut(i => i.toString)
-
-  val printThem = zStreamRange.foreach(i => printLine(s"got item from stream: $i"))
-  // todo: foreach again on same stream (exhausted??)
+  val zStreamStringRange = zStreamRange.map(i => i.toString)
 
   val callbackStream = ZStream.async[Any, Throwable, String](cb =>
     registerCallback(response => cb(ZIO.succeed(Chunk(response))))
@@ -24,36 +21,29 @@ object Main extends ZIOAppDefault {
 
   val label = createTextLabel(document.body)
 
-  val combined = zStreamChannel >>> label
+  //val combined = zStreamStringRange.run(label)
 
   val myAppLogic =
     for {
       _ <- printLine( "Starting application")
       _ <- ZIO.attempt(appendPar(document.body, "Hello World"))
-//      stream <- ZIO.attempt(appendButton(document.body, "Click Me"))
-//      buttonSink = ZSink.foreach(_ => ZIO.attempt(appendPar(document.body, "clicked!!")))
-//      _ <- stream.run(buttonSink)
-      _ <- combined.run
+      stream <- ZIO.attempt(appendButton(document.body, "Click Me"))
+      counter = stream.mapAccum(0)((state, value) => (state + 1, state + 1)).map(i => i.toString)
+//      buttonSink = ZSink.foreach(i => ZIO.attempt(appendPar(document.body, "clicked!!")))
+//      _ <- counter.run(buttonSink)
+      _ <- counter.run(label)
 //      _ <- printResponse
 //      movieData <- ZIO.attempt(getMovieData())
 //      _ <- ZIO.attempt(appendPar(document.body, movieData))
     } yield ()
 }
 
-//def textLabelSink(targetNode: dom.Node): ZSink[]
-
-def createTextLabel(targetNode: dom.Node): ZChannel[Any, Any, String, Any, Nothing, Nothing, Unit] = {
+def createTextLabel(targetNode: dom.Node) = {
   val parNode = document.createElement("p")
-  val textLabelChannel =
-    ZChannel.readWith(
-      (someText: String) => ZChannel.fromZIO(ZIO.attempt(parNode.textContent = someText).ignore),
-      (_: Any) => ZChannel.unit,
-      (_: Any) => ZChannel.unit
-    )
+  val sink = ZSink.foreach((s: String) => ZIO.attempt(parNode.textContent = s).ignore)
   targetNode.appendChild(parNode)
-  textLabelChannel
+  sink
 }
-
 
 def appendPar(targetNode: dom.Node, text: String): Unit = {
   val parNode = document.createElement("p")
@@ -67,8 +57,7 @@ def appendButton(targetNode: dom.Node, text: String): ZStream[Any, Throwable, Un
   targetNode.appendChild(buttonNode)
 
   def registerButtonCallback(handler: Unit => Unit) = {
-    targetNode.addEventListener("onclick", _ => handler(()))
-  }
+    buttonNode.addEventListener("click", _ => handler(()))}
 
   val buttonCallbackStream = ZStream.async[Any, Throwable, Unit](cb =>
     registerButtonCallback(event => cb(ZIO.succeed(Chunk(()))))
