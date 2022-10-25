@@ -1,10 +1,10 @@
 package org.movieticketordering
 
 import org.scalajs.dom
-import org.scalajs.dom.{Event, document}
+import org.scalajs.dom.{Event, HTMLInputElement, document}
 import zio.*
 import zio.Console.*
-import zio.stream._
+import zio.stream.*
 
 object Main extends ZIOAppDefault {
   override def run: Task[Unit] = myAppLogic
@@ -13,7 +13,7 @@ object Main extends ZIOAppDefault {
 
   val zStreamStringRange = zStreamRange.map(i => i.toString)
 
-  val callbackStream = ZStream.async[Any, Throwable, String](cb =>
+  def callbackStream = ZStream.async[Any, Throwable, String](cb =>
     registerCallback(response => cb(ZIO.succeed(Chunk(response))))
   )
 
@@ -27,11 +27,18 @@ object Main extends ZIOAppDefault {
     for {
       _ <- printLine( "Starting application")
       _ <- ZIO.attempt(appendPar(document.body, "Hello World"))
-      stream <- ZIO.attempt(appendButton(document.body, "Click Me"))
-      counter = stream.mapAccum(0)((state, value) => (state + 1, state + 1)).map(i => i.toString)
+      loadMoviesButtonStream <- ZIO.attempt(appendButton(document.body, "Load Movies"))
+      moviesStream: ZStream[Any, Throwable, String] = loadMoviesButtonStream.flatMap(_ => callbackStream)
+      addMovieButtonStream <- ZIO.attempt(appendButton(document.body, "Add Movie"))
+      textBoxStream = createInput(document.body)
+      tapped = textBoxStream.tap(printLine(_))
+      _ <- moviesStream.run(label).fork
+      _ <- tapped.runDrain
+
+//      counter = stream.mapAccum(0)((state, value) => (state + 1, state + 1)).map(i => i.toString)
 //      buttonSink = ZSink.foreach(i => ZIO.attempt(appendPar(document.body, "clicked!!")))
 //      _ <- counter.run(buttonSink)
-      _ <- counter.run(label)
+//      _ <- counter.run(label)
 //      _ <- printResponse
 //      movieData <- ZIO.attempt(getMovieData())
 //      _ <- ZIO.attempt(appendPar(document.body, movieData))
@@ -44,6 +51,24 @@ def createTextLabel(targetNode: dom.Node) = {
   targetNode.appendChild(parNode)
   sink
 }
+
+def createInput(targetNode: dom.Node) = {
+  val inputElement = document.createElement("input").asInstanceOf[HTMLInputElement]
+  inputElement.setAttribute("type", "text")
+  targetNode.appendChild(inputElement)
+
+  def registerCallback(handler: Unit => Unit): Unit = {
+    inputElement.addEventListener("input", _ => handler(()))}
+
+  val stream = ZStream.async[Any, Throwable, String](cb =>
+    registerCallback(event => {
+      cb(ZIO.attempt(Chunk(inputElement.value)).orElseSucceed(Chunk("default")))
+    })
+  )
+
+  stream
+}
+
 
 def appendPar(targetNode: dom.Node, text: String): Unit = {
   val parNode = document.createElement("p")
