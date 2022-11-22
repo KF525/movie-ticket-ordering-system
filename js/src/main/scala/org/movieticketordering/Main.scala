@@ -32,8 +32,15 @@ object Main extends ZIOAppDefault {
       addMovieButtonStream <- ZIO.attempt(appendButton(document.body, "Add Movie"))
       textBoxStream = createInput(document.body)
       tapped = textBoxStream.tap(printLine(_))
+      textWhenClicked = addMovieButtonStream.mergeWith(textBoxStream)(Left(_), Right(_)).mapAccum(Option.empty[String]){
+        case (acc, Left(_)) => (acc, acc)
+        case (acc, Right(str)) => (Some(str), None)
+      }.collectSome
+      tapped2 = textWhenClicked.tap(printLine(_))
       _ <- moviesStream.run(label).fork
-      _ <- tapped.runDrain
+      _ <- tapped2.runDrain
+
+      // TODO next: post new movie when button clicked
 
 //      counter = stream.mapAccum(0)((state, value) => (state + 1, state + 1)).map(i => i.toString)
 //      buttonSink = ZSink.foreach(i => ZIO.attempt(appendPar(document.body, "clicked!!")))
