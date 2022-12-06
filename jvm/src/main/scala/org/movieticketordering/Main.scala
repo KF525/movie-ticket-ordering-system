@@ -17,7 +17,8 @@ object MyApp extends ZIOAppDefault {
   val myAppLogic =
     for {
       _ <- printLine("Starting application")
-      serviceRoutes = new ServiceRoutes(new MovieController())
+      movieStore <- Ref.make(List[Movie]())
+      serviceRoutes = new ServiceRoutes(new MovieController(movieStore))
       fileRoutes = new StaticFileRoutes()
       _ <- HttpServer.buildServer(serviceRoutes.movieRoute <+> fileRoutes.fileRoutes)
     } yield ()
